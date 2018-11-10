@@ -21,6 +21,7 @@ func (registry *Registry) Manifest(repository, reference string) (*schema1.Signe
 	}
 
 	req.Header.Set("Accept", schema1.MediaTypeManifest)
+	req.Header.Add("Accept", schema1.MediaTypeSignedManifest)
 	resp, err := registry.Client.Do(req)
 	if err != nil {
 		return nil, err
