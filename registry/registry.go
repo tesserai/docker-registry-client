@@ -142,16 +142,17 @@ func WrapTransport(transport http.RoundTripper, url string, opts Options) http.R
 	return transport
 }
 
-func (r *Registry) url(pathTemplate string, args ...interface{}) string {
+func (registry *Registry) url(pathTemplate string, args ...interface{}) string {
 	pathSuffix := fmt.Sprintf(pathTemplate, args...)
-	url := fmt.Sprintf("%s%s", r.URL, pathSuffix)
+	url := fmt.Sprintf("%s%s", registry.URL, pathSuffix)
 	return url
 }
 
-func (r *Registry) Ping() error {
-	url := r.url("/v2/")
-	r.Logf("registry.ping url=%s", url)
-	resp, err := r.Client.Get(url)
+// Ping checks if the registry is accessible and supports Docker Registry API v2
+func (registry *Registry) Ping() error {
+	url := registry.url("/v2/")
+	registry.Logf("registry.ping url=%s", url)
+	resp, err := registry.Client.Get(url)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
