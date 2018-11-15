@@ -46,6 +46,28 @@
     }
   },
   {
+    "url": "https://gcr.io",
+    "repository": "google_containers/pause-amd64",
+    "reference": "3.0",
+    "expected": {
+      "manifest_v1_digest": "sha256:f629c2330ec4425841a69975430305f6a5cfdb7ef236174379ec49dbed6ae6f9",
+      "blobs": [
+        {
+          "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
+          "digest": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+        },
+        {
+          "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
+          "digest": "sha256:f112334343777b75be77ec1f835e3bbbe7d7bd46e27b6a2ae35c6b3cfea0987c"
+        },
+        {
+          "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
+          "digest": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
+        }
+      ]
+    }
+  },
+  {
     "url": "https://registry-1.docker.io",
     "repository": "library/alpine",
     "reference": "3.8",
