@@ -58,15 +58,16 @@ var _testCases []*TestCase
 
 // testCases loads all test data files and returns with the union of all testcases read
 func testCases(t *testing.T) []*TestCase {
+	// cache results in _testCases
 	if _testCases != nil {
 		return _testCases
 	}
 
+	// load testcases from files matching testDataFilePattern
 	tdFilenames, err := filepath.Glob(testDataFilePattern)
 	if err != nil {
 		t.Fatal("failed to list test data files:", testDataFilePattern)
 	}
-
 	for _, tdFilename := range tdFilenames {
 		tdFile, err := os.Open(tdFilename)
 		if err != nil {
@@ -83,6 +84,23 @@ func testCases(t *testing.T) []*TestCase {
 		}
 		_testCases = append(_testCases, tcs...)
 	}
+
+	// add testcase for DockerHub if credentials are given in environment variables
+	username := os.Getenv("DRC_TEST_DOCKERHUB_USERNAME")
+	password := os.Getenv("DRC_TEST_DOCKERHUB_PASSWORD")
+	if username != "" && password != "" {
+		tc := &TestCase{
+			Url:        "https://registry-1.docker.io",
+			Repository: username + "/docker-registry-client-test",
+			Reference:  "latest",
+			Writeable:  true,
+			Options: registry.Options{
+				Username: username,
+				Password: password,
+			},
+		}
+		_testCases = append(_testCases, tc)
+	}
 	return _testCases
 }
 
@@ -95,9 +113,12 @@ func updateTestData(t *testing.T) {
 
 	tdFiles := make(map[string][]*TestCase)
 	for _, tc := range testCases(t) {
-		tdFiles[tc.Origin] = append(tdFiles[tc.Origin], tc)
+		if tc.Origin != "" {
+			tdFiles[tc.Origin] = append(tdFiles[tc.Origin], tc)
+		}
 	}
 	for tdFilename, tcs := range tdFiles {
+		t.Log("Updating", tdFilename)
 		tdFile, err := os.Create(tdFilename)
 		if err != nil {
 			t.Fatal(err)
@@ -109,6 +130,17 @@ func updateTestData(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
+
+func foreachWritableTestcase(t *testing.T, testFunction func(*testing.T, *TestCase)) {
+	for _, tc := range testCases(t) {
+		if tc.Writeable {
+			t.Run(tc.Name(), func(t *testing.T) {
+				testFunction(t, tc)
+			})
+		}
+	}
+
 }
 
 // blobSlicesAreEqual checks if the two given slices are equal
