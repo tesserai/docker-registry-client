@@ -51,7 +51,7 @@ func (tc *TestCase) Registry(t *testing.T) *registry.Registry {
 	return tc.registry
 }
 
-const testDataFilePattern = "testdata/registry_tests*.json"
+const testDataFilePattern = "testdata/*registry_tests.json"
 
 var _testDataUpdate = flag.Bool("update", false, "update testdata files")
 var _testCases []*TestCase
