@@ -7,9 +7,11 @@ import (
 	"github.com/docker/distribution/manifest/manifestlist"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
-	"github.com/opencontainers/go-digest"
+	digest "github.com/opencontainers/go-digest"
 )
 
+// Compares the result of the getManifest() call with the given TestCase
+// Skips any TestCase whose mediatype is not wantMediaType.
 func checkManifest(t *testing.T, tc *TestCase,
 	wantDigest *string, wantMediaType string,
 	getManifest func(t *testing.T) (distribution.Manifest, error)) {
@@ -54,6 +56,18 @@ func TestRegistry_Manifest(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifest(t, tc, &tc.ManifestV1Digest, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
+		})
+		checkManifest(t, tc, &tc.ManifestV2Digest, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
+			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
+		})
+	}
+	// updateTestData skipped deliberately
+}
+
+func TestRegistry_ManifestV1(t *testing.T) {
+	for _, tc := range testCases(t) {
+		checkManifest(t, tc, &tc.ManifestV1Digest, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
+			return tc.Registry(t).ManifestV1(tc.Repository, tc.Reference)
 		})
 	}
 	updateTestData(t)
