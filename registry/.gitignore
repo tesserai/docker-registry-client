@@ -1,2 +1,2 @@
 private_test.go
-testdata/registry_tests.private.json
+testdata/private*registry_tests.json

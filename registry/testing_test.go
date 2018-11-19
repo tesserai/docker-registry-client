@@ -12,17 +12,17 @@ import (
 
 	"github.com/docker/distribution"
 	"github.com/nokia/docker-registry-client/registry"
+	"github.com/opencontainers/go-digest"
 )
 
 // Expected stores the expected results of various tests
 type Expected struct {
-	ManifestV1Digest   string                    `json:"manifest_v1_digest,omitempty"`
-	ManifestV2Digest   string                    `json:"manifest_v2_digest,omitempty"`
-	ManifestListDigest string                    `json:"manifestlist_digest,omitempty"`
-	Blobs              []distribution.Descriptor `json:"blobs,omitempty"`
+	MediaType      string                    `json:"media_type,omitempty"`
+	ManifestDigest digest.Digest             `json:"manifest_digest,omitempty"`
+	Blobs          []distribution.Descriptor `json:"blobs,omitempty"`
 }
 
-// TestCase represents a test case normally read from a test data file.
+// TestCase represents a test case (normally read from a test data file).
 type TestCase struct {
 	Url        string `json:"url"`
 	Repository string `json:"repository"`

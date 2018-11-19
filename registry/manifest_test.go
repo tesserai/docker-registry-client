@@ -11,12 +11,11 @@ import (
 )
 
 // Compares the result of the getManifest() call with the given TestCase
-// Skips any TestCase whose mediatype is not wantMediaType.
-func checkManifest(t *testing.T, tc *TestCase,
-	wantDigest *string, wantMediaType string,
+// Does nothing (skips the TestCase) if its media type is not wantMediaType.
+func checkManifest(t *testing.T, tc *TestCase, wantMediaType string,
 	getManifest func(t *testing.T) (distribution.Manifest, error)) {
 
-	if *wantDigest == "" {
+	if tc.MediaType != wantMediaType {
 		return
 	}
 
@@ -31,22 +30,25 @@ func checkManifest(t *testing.T, tc *TestCase,
 			t.Error("Payload() error:", err)
 			return
 		}
-		d := digest.FromBytes(payload).String()
+		d := digest.FromBytes(payload)
 
 		if !*_testDataUpdate {
 			// do actual testing of manifest
-			if mediaType != wantMediaType {
-				t.Errorf("MediaType = %v, want %v", mediaType, wantMediaType)
+			if mediaType == "" {
+				mediaType = schema1.MediaTypeSignedManifest
 			}
-			if d != *wantDigest {
-				t.Errorf("digest = %v, want %v", d, *wantDigest)
+			if mediaType != tc.MediaType {
+				t.Errorf("MediaType = %v, want %v", mediaType, tc.MediaType)
+			}
+			if d != tc.ManifestDigest {
+				t.Errorf("digest = %s, want %s", d, tc.ManifestDigest)
 			}
 			if !blobSlicesAreEqual(got.References(), tc.Blobs) {
 				t.Errorf("\nblobs:\n%v,\nwant:\n%v", got.References(), tc.Blobs)
 			}
 		} else {
 			// update TestCase to reflect the result of the tested method
-			*wantDigest = d
+			tc.ManifestDigest = d
 			tc.Blobs = got.References()
 		}
 	})
@@ -54,10 +56,10 @@ func checkManifest(t *testing.T, tc *TestCase,
 
 func TestRegistry_Manifest(t *testing.T) {
 	for _, tc := range testCases(t) {
-		checkManifest(t, tc, &tc.ManifestV1Digest, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
+		checkManifest(t, tc, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
 		})
-		checkManifest(t, tc, &tc.ManifestV2Digest, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
+		checkManifest(t, tc, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
 		})
 	}
@@ -66,7 +68,7 @@ func TestRegistry_Manifest(t *testing.T) {
 
 func TestRegistry_ManifestV1(t *testing.T) {
 	for _, tc := range testCases(t) {
-		checkManifest(t, tc, &tc.ManifestV1Digest, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
+		checkManifest(t, tc, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).ManifestV1(tc.Repository, tc.Reference)
 		})
 	}
@@ -75,7 +77,7 @@ func TestRegistry_ManifestV1(t *testing.T) {
 
 func TestRegistry_ManifestV2(t *testing.T) {
 	for _, tc := range testCases(t) {
-		checkManifest(t, tc, &tc.ManifestV2Digest, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
+		checkManifest(t, tc, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).ManifestV2(tc.Repository, tc.Reference)
 		})
 	}
@@ -84,7 +86,7 @@ func TestRegistry_ManifestV2(t *testing.T) {
 
 func TestRegistry_ManifestList(t *testing.T) {
 	for _, tc := range testCases(t) {
-		checkManifest(t, tc, &tc.ManifestListDigest, manifestlist.MediaTypeManifestList, func(t *testing.T) (distribution.Manifest, error) {
+		checkManifest(t, tc, manifestlist.MediaTypeManifestList, func(t *testing.T) (distribution.Manifest, error) {
 			return tc.Registry(t).ManifestList(tc.Repository, tc.Reference)
 		})
 	}

@@ -4,7 +4,8 @@
     "repository": "coreos/etcd",
     "reference": "v3.3.10",
     "expected": {
-      "manifest_v1_digest": "sha256:8775057d2b3d9c39ba510bf6080a33bd310ab1f0c10db9949864dd882da87a12",
+      "media_type": "application/vnd.docker.distribution.manifest.v1+prettyjws",
+      "manifest_digest": "sha256:8775057d2b3d9c39ba510bf6080a33bd310ab1f0c10db9949864dd882da87a12",
       "blobs": [
         {
           "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
@@ -50,7 +51,8 @@
     "repository": "google_containers/pause-amd64",
     "reference": "3.0",
     "expected": {
-      "manifest_v1_digest": "sha256:f629c2330ec4425841a69975430305f6a5cfdb7ef236174379ec49dbed6ae6f9",
+      "media_type": "application/vnd.docker.distribution.manifest.v1+prettyjws",
+      "manifest_digest": "sha256:f629c2330ec4425841a69975430305f6a5cfdb7ef236174379ec49dbed6ae6f9",
       "blobs": [
         {
           "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
@@ -72,7 +74,8 @@
     "repository": "library/alpine",
     "reference": "3.8",
     "expected": {
-      "manifest_v2_digest": "sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b",
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "manifest_digest": "sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b",
       "blobs": [
         {
           "mediaType": "application/vnd.docker.container.image.v1+json",
@@ -92,7 +95,8 @@
     "repository": "library/alpine",
     "reference": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528",
     "expected": {
-      "manifest_v2_digest": "sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b",
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "manifest_digest": "sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b",
       "blobs": [
         {
           "mediaType": "application/vnd.docker.container.image.v1+json",
@@ -112,7 +116,8 @@
     "repository": "library/alpine",
     "reference": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528",
     "expected": {
-      "manifestlist_digest": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528",
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json",
+      "manifest_digest": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528",
       "blobs": [
         {
           "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
