@@ -17,9 +17,10 @@ import (
 
 // Expected stores the expected results of various tests
 type Expected struct {
-	MediaType      string                    `json:"media_type,omitempty"`
-	ManifestDigest digest.Digest             `json:"manifest_digest,omitempty"`
-	Blobs          []distribution.Descriptor `json:"blobs,omitempty"`
+	MediaType          string                    `json:"media_type,omitempty"`
+	ManifestDigest     digest.Digest             `json:"manifest_digest,omitempty"`
+	Blobs              []distribution.Descriptor `json:"blobs,omitempty"`
+	ManifestDescriptor distribution.Descriptor   `json:"manifest_descriptor,omitempty"`
 }
 
 // TestCase represents a test case (normally read from a test data file).

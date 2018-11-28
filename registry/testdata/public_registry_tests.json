@@ -2,7 +2,7 @@
   {
     "url": "https://quay.io",
     "repository": "coreos/etcd",
-    "reference": "v3.3.10",
+    "reference": "sha256:cb9cee3d9d49050e7682fde0a9b26d6948a0117b1b4367b8170fcaa3960a57b8",
     "expected": {
       "media_type": "application/vnd.docker.distribution.manifest.v1+prettyjws",
       "manifest_digest": "sha256:8775057d2b3d9c39ba510bf6080a33bd310ab1f0c10db9949864dd882da87a12",
@@ -43,7 +43,12 @@
           "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
           "digest": "sha256:2bc1c5ee86055a39979b389170e9638262b2e11e1761403e5e0321101f96b427"
         }
-      ]
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.v1+prettyjws",
+        "size": 6231,
+        "digest": "sha256:cb9cee3d9d49050e7682fde0a9b26d6948a0117b1b4367b8170fcaa3960a57b8"
+      }
     }
   },
   {
@@ -66,7 +71,12 @@
           "mediaType": "application/vnd.docker.container.image.rootfs.diff+x-gtar",
           "digest": "sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4"
         }
-      ]
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.v1+prettyjws",
+        "size": 4589,
+        "digest": "sha256:163ac025575b775d1c0f9bf0bdd0f086883171eb475b5068e7defa4ca9e76516"
+      }
     }
   },
   {
@@ -87,7 +97,12 @@
           "size": 2206931,
           "digest": "sha256:4fe2ade4980c2dda4fc95858ebb981489baec8c1e4bd282ab1c3560be8ff9bde"
         }
-      ]
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+        "size": 2029,
+        "digest": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528"
+      }
     }
   },
   {
@@ -108,7 +123,53 @@
           "size": 2206931,
           "digest": "sha256:4fe2ade4980c2dda4fc95858ebb981489baec8c1e4bd282ab1c3560be8ff9bde"
         }
-      ]
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+        "size": 2029,
+        "digest": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528"
+      }
+    }
+  },
+  {
+    "url": "https://registry-1.docker.io",
+    "repository": "openshift/origin-pod",
+    "reference": "v3.11.0",
+    "expected": {
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "manifest_digest": "sha256:de8f558d99ea86fcb262720cdb35df867c2a828dab3236d25d0c4616a1aa424a",
+      "blobs": [
+        {
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 4238,
+          "digest": "sha256:725dab326a5ece2d4c2cee14d5d17331134087192ae1ba898c912d2bd4a39ee3"
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "size": 74703002,
+          "digest": "sha256:aeb7866da422acc7e93dcf7323f38d7646f6269af33bcdb6647f2094fc4b3bf7"
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "size": 9240822,
+          "digest": "sha256:a26f029268ec686480a63cd9a91c97540a8160be578ef5de326958c29bc3a310"
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "size": 271,
+          "digest": "sha256:92371ed14ad20849220c0f70fbbd8730ed15fd4ef91bf6d69e607fef36cc617a"
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "size": 6413166,
+          "digest": "sha256:402b29093abd69a0dbfbd5a74816f1e13499cf7672d3fb79d3e073b876a8fe55"
+        }
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "size": 1158,
+        "digest": "sha256:de8f558d99ea86fcb262720cdb35df867c2a828dab3236d25d0c4616a1aa424a"
+      }
     }
   },
   {
@@ -149,7 +210,12 @@
           "size": 735,
           "digest": "sha256:5309515d91ed17f91f6fd97a155ca5d347f074f365bdcd9f4684528676a3d269"
         }
-      ]
+      ],
+      "manifest_descriptor": {
+        "mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+        "size": 2029,
+        "digest": "sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528"
+      }
     }
   }
 ]

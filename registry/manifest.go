@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/docker/distribution"
@@ -14,13 +15,15 @@ import (
 	digest "github.com/opencontainers/go-digest"
 )
 
-// manifest is able to download any type of manifest addressed by repository/reference.
-// acceptedMediaTypes is the list of acceptable/expected mediatypes (shouldn't be empty).
-func (registry *Registry) manifest(repository, reference string, acceptedMediaTypes []string) (distribution.Manifest, error) {
-	url := registry.url("/v2/%s/manifests/%s", repository, reference)
-	registry.Logf("registry.manifest.get url=%s repository=%s reference=%s", url, repository, reference)
+// fetchManifest sends a HTTP request to the URL of the manifest addressed by repository/reference.
+// httpVerb is the HTTP verb to send: GET or HEAD. acceptedMediaTypes is the list of acceptable/expected media types.
+// Returns with the HTTP response.
+func (registry *Registry) fetchManifest(repository, reference string, httpVerb string, acceptedMediaTypes []string) (resp *http.Response, err error) {
 
-	req, err := http.NewRequest("GET", url, nil)
+	url := registry.url("/v2/%s/manifests/%s", repository, reference)
+	registry.Logf("registry.manifest.%s url=%s repository=%s reference=%s", strings.ToLower(httpVerb), url, repository, reference)
+
+	req, err := http.NewRequest(httpVerb, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -32,11 +35,22 @@ func (registry *Registry) manifest(repository, reference string, acceptedMediaTy
 			req.Header.Add("Accept", acceptedMediaTypes[i])
 		}
 	}
-	resp, err := registry.Client.Do(req)
+	resp, err = registry.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// manifest downloads any type of manifest addressed by repository/reference.
+// acceptedMediaTypes is the list of acceptable/expected mediatypes (shouldn't be empty).
+func (registry *Registry) manifest(repository, reference string, acceptedMediaTypes []string) (distribution.Manifest, error) {
+	resp, err := registry.fetchManifest(repository, reference, "GET", acceptedMediaTypes)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	actualMediaType := resp.Header.Get("Content-Type")
 	acceptable := false
 	for i := range acceptedMediaTypes {
@@ -170,43 +184,56 @@ func (registry *Registry) ManifestV2(repository, reference string) (*schema2.Des
 	return deserializedManifest, nil
 }
 
-func (registry *Registry) ManifestDigest(repository, reference string) (digest.Digest, error) {
-	url := registry.url("/v2/%s/manifests/%s", repository, reference)
-	registry.Logf("registry.manifest.head url=%s repository=%s reference=%s", url, repository, reference)
-
-	resp, err := registry.Client.Head(url)
-	if resp != nil {
-		defer resp.Body.Close()
+// ManifestDescriptor fills the returned Descriptor according to the Content-Type, Content-Length and
+// Docker-Content-Digest headers of the HTTP Response to a Manifest query.
+func (registry *Registry) manifestDescriptor(repository, reference string, acceptedMediaTypes []string) (distribution.Descriptor, error) {
+	resp, err := registry.fetchManifest(repository, reference, "HEAD", acceptedMediaTypes)
+	if err != nil {
+		return distribution.Descriptor{}, err
 	}
+	defer resp.Body.Close()
+
+	var desc distribution.Descriptor
+	desc.MediaType = resp.Header.Get("Content-Type")
+	desc.Digest = digest.Digest(resp.Header.Get("Docker-Content-Digest"))
+	size, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+	if err == nil {
+		// make sure desc.Size is zero in case of an error
+		desc.Size = size
+	}
+	return desc, nil
+}
+
+// ManifestDescriptor fills the returned Descriptor according to the Content-Type, Content-Length and
+// Docker-Content-Digest headers of the HTTP Response to a Manifest query.
+func (registry *Registry) ManifestDescriptor(repository, reference string) (distribution.Descriptor, error) {
+	mediaTypes := []string{manifestlist.MediaTypeManifestList, schema2.MediaTypeManifest, schema1.MediaTypeSignedManifest, schema1.MediaTypeManifest}
+	return registry.manifestDescriptor(repository, reference, mediaTypes)
+}
+
+// ManifestDigest returns the 'Docker-Content-Digest' field of the header when making a
+// request to the schema1 manifest.
+func (registry *Registry) ManifestDigest(repository, reference string) (digest.Digest, error) {
+	mediaTypes := []string{}
+	desc, err := registry.manifestDescriptor(repository, reference, mediaTypes)
 	if err != nil {
 		return "", err
 	}
-	return digest.Parse(resp.Header.Get("Docker-Content-Digest"))
+	return desc.Digest, nil
 }
 
 // ManifestV2Digest returns the 'Docker-Content-Digest' field of the header when making a
-// request to the v2 manifest.
+// request to the schema2 manifest.
 func (registry *Registry) ManifestV2Digest(repository, reference string) (digest.Digest, error) {
-	url := registry.url("/v2/%s/manifests/%s", repository, reference)
-	registry.Logf("registry.manifest.head url=%s repository=%s reference=%s", url, repository, reference)
-
-	req, err := http.NewRequest("HEAD", url, nil)
+	mediaTypes := []string{schema2.MediaTypeManifest}
+	desc, err := registry.manifestDescriptor(repository, reference, mediaTypes)
 	if err != nil {
 		return "", err
 	}
-
-	req.Header.Set("Accept", schema2.MediaTypeManifest)
-	resp, err := registry.Client.Do(req)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		return "", err
-	}
-
-	return digest.Parse(resp.Header.Get("Docker-Content-Digest"))
+	return desc.Digest, nil
 }
 
+// DeleteManifest deletes the manifest given by its digest from the repository
 func (registry *Registry) DeleteManifest(repository string, digest digest.Digest) error {
 	url := registry.url("/v2/%s/manifests/%s", repository, digest)
 	registry.Logf("registry.manifest.delete url=%s repository=%s reference=%s", url, repository, digest)
