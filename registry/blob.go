@@ -1,19 +1,21 @@
 package registry
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/docker/distribution"
 	digest "github.com/opencontainers/go-digest"
+	"golang.org/x/net/context/ctxhttp"
 )
 
-func (registry *Registry) DownloadBlob(repository string, digest digest.Digest) (io.ReadCloser, error) {
+func (registry *Registry) DownloadBlob(ctx context.Context, repository string, digest digest.Digest) (io.ReadCloser, error) {
 	url := registry.url("/v2/%s/blobs/%s", repository, digest)
 	registry.Logf("registry.blob.download url=%s repository=%s digest=%s", url, repository, digest)
 
-	resp, err := registry.Client.Get(url)
+	resp, err := ctxhttp.Get(ctx, registry.Client, url)
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +31,8 @@ func (registry *Registry) DownloadBlob(repository string, digest digest.Digest) 
 // GetBody parameter of http.Client. This also means that if content is of type *bytes.Buffer,
 // *bytes.Reader or *strings.Reader, then GetBody is populated automatically (as explained in the
 // documentation of http.NewRequest()), so nil can be passed as the getBody parameter.
-func (registry *Registry) UploadBlob(repository string, digest digest.Digest, content io.Reader, getBody func() (io.ReadCloser, error)) error {
-	uploadUrl, err := registry.initiateUpload(repository)
+func (registry *Registry) UploadBlob(ctx context.Context, repository string, digest digest.Digest, content io.Reader, getBody func() (io.ReadCloser, error)) error {
+	uploadUrl, err := registry.initiateUpload(ctx, repository)
 	if err != nil {
 		return err
 	}
@@ -49,7 +51,7 @@ func (registry *Registry) UploadBlob(repository string, digest digest.Digest, co
 		upload.GetBody = getBody
 	}
 
-	resp, err := registry.Client.Do(upload)
+	resp, err := ctxhttp.Do(ctx, registry.Client, upload)
 	if err != nil {
 		return err
 	}
@@ -57,11 +59,11 @@ func (registry *Registry) UploadBlob(repository string, digest digest.Digest, co
 	return nil
 }
 
-func (registry *Registry) HasBlob(repository string, digest digest.Digest) (bool, error) {
+func (registry *Registry) HasBlob(ctx context.Context, repository string, digest digest.Digest) (bool, error) {
 	checkUrl := registry.url("/v2/%s/blobs/%s", repository, digest)
 	registry.Logf("registry.blob.check url=%s repository=%s digest=%s", checkUrl, repository, digest)
 
-	resp, err := registry.Client.Head(checkUrl)
+	resp, err := ctxhttp.Head(ctx, registry.Client, checkUrl)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -84,11 +86,11 @@ func (registry *Registry) HasBlob(repository string, digest digest.Digest) (bool
 	return false, err
 }
 
-func (registry *Registry) BlobMetadata(repository string, digest digest.Digest) (distribution.Descriptor, error) {
+func (registry *Registry) BlobMetadata(ctx context.Context, repository string, digest digest.Digest) (distribution.Descriptor, error) {
 	checkUrl := registry.url("/v2/%s/blobs/%s", repository, digest)
 	registry.Logf("registry.blob.check url=%s repository=%s digest=%s", checkUrl, repository, digest)
 
-	resp, err := registry.Client.Head(checkUrl)
+	resp, err := ctxhttp.Head(ctx, registry.Client, checkUrl)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -102,11 +104,11 @@ func (registry *Registry) BlobMetadata(repository string, digest digest.Digest) 
 	}, nil
 }
 
-func (registry *Registry) initiateUpload(repository string) (*url.URL, error) {
+func (registry *Registry) initiateUpload(ctx context.Context, repository string) (*url.URL, error) {
 	initiateUrl := registry.url("/v2/%s/blobs/uploads/", repository)
 	registry.Logf("registry.blob.initiate-upload url=%s repository=%s", initiateUrl, repository)
 
-	resp, err := registry.Client.Post(initiateUrl, "application/octet-stream", nil)
+	resp, err := ctxhttp.Post(ctx, registry.Client, initiateUrl, "application/octet-stream", nil)
 	if resp != nil {
 		defer resp.Body.Close()
 	}

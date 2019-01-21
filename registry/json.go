@@ -1,18 +1,21 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"regexp"
+
+	"golang.org/x/net/context/ctxhttp"
 )
 
 var (
 	ErrNoMorePages = errors.New("No more pages")
 )
 
-func (registry *Registry) getJson(url string, response interface{}) error {
-	resp, err := registry.Client.Get(url)
+func (registry *Registry) getJson(ctx context.Context, url string, response interface{}) error {
+	resp, err := ctxhttp.Get(ctx, registry.Client, url)
 	if err != nil {
 		return err
 	}
@@ -30,8 +33,8 @@ func (registry *Registry) getJson(url string, response interface{}) error {
 // getPaginatedJson accepts a string and a pointer, and returns the
 // next page URL while updating pointed-to variable with a parsed JSON
 // value. When there are no more pages it returns `ErrNoMorePages`.
-func (registry *Registry) getPaginatedJson(url string, response interface{}) (string, error) {
-	resp, err := registry.Client.Get(url)
+func (registry *Registry) getPaginatedJson(ctx context.Context, url string, response interface{}) (string, error) {
+	resp, err := ctxhttp.Get(ctx, registry.Client, url)
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package registry_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -59,10 +60,12 @@ func checkManifest(t *testing.T, tc *TestCase, wantMediaType string,
 func TestRegistry_Manifest(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifest(t, tc, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
-			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).Manifest(ctx, tc.Repository, tc.Reference)
 		})
 		checkManifest(t, tc, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
-			return tc.Registry(t).Manifest(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).Manifest(ctx, tc.Repository, tc.Reference)
 		})
 	}
 	// updateTestData skipped deliberately
@@ -71,7 +74,8 @@ func TestRegistry_Manifest(t *testing.T) {
 func TestRegistry_ManifestV1(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifest(t, tc, schema1.MediaTypeSignedManifest, func(t *testing.T) (distribution.Manifest, error) {
-			return tc.Registry(t).ManifestV1(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestV1(ctx, tc.Repository, tc.Reference)
 		})
 	}
 	updateTestData(t)
@@ -80,7 +84,8 @@ func TestRegistry_ManifestV1(t *testing.T) {
 func TestRegistry_ManifestV2(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifest(t, tc, schema2.MediaTypeManifest, func(t *testing.T) (distribution.Manifest, error) {
-			return tc.Registry(t).ManifestV2(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestV2(ctx, tc.Repository, tc.Reference)
 		})
 	}
 	updateTestData(t)
@@ -89,7 +94,8 @@ func TestRegistry_ManifestV2(t *testing.T) {
 func TestRegistry_ManifestList(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifest(t, tc, manifestlist.MediaTypeManifestList, func(t *testing.T) (distribution.Manifest, error) {
-			return tc.Registry(t).ManifestList(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestList(ctx, tc.Repository, tc.Reference)
 		})
 	}
 	updateTestData(t)
@@ -125,7 +131,8 @@ func checkManifestDescriptor(t *testing.T, tc *TestCase,
 func TestRegistry_ManifestDescriptor(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifestDescriptor(t, tc, func(t *testing.T) (distribution.Descriptor, error) {
-			return tc.Registry(t).ManifestDescriptor(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestDescriptor(ctx, tc.Repository, tc.Reference)
 		})
 	}
 	updateTestData(t)
@@ -155,7 +162,8 @@ func checkManifestDigest(t *testing.T, tc *TestCase, wantMediaType string,
 func TestRegistry_ManifestDigest(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifestDigest(t, tc, schema1.MediaTypeSignedManifest, func(t *testing.T) (digest.Digest, error) {
-			return tc.Registry(t).ManifestDigest(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestDigest(ctx, tc.Repository, tc.Reference)
 		})
 	}
 }
@@ -163,7 +171,8 @@ func TestRegistry_ManifestDigest(t *testing.T) {
 func TestRegistry_ManifestV2Digest(t *testing.T) {
 	for _, tc := range testCases(t) {
 		checkManifestDigest(t, tc, schema2.MediaTypeManifest, func(t *testing.T) (digest.Digest, error) {
-			return tc.Registry(t).ManifestV2Digest(tc.Repository, tc.Reference)
+			ctx := context.Background()
+			return tc.Registry(t).ManifestV2Digest(ctx, tc.Repository, tc.Reference)
 		})
 	}
 }

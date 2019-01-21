@@ -2,6 +2,7 @@ package registry_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
@@ -16,7 +17,8 @@ func TestRegistry_UploadBlob(t *testing.T) {
 
 	foreachWritableTestcase(t, func(t *testing.T, tc *TestCase) {
 		content := bytes.NewBuffer(blobData)
-		err := tc.Registry(t).UploadBlob(tc.Repository, digest, content, nil)
+		ctx := context.Background()
+		err := tc.Registry(t).UploadBlob(ctx, tc.Repository, digest, content, nil)
 		if err != nil {
 			t.Error("UploadBlob() failed:", err)
 		}
@@ -44,7 +46,8 @@ func TestRegistry_UploadBlobFromFile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		err = tc.Registry(t).UploadBlob(tc.Repository, digest, blobReader, body)
+		ctx := context.Background()
+		err = tc.Registry(t).UploadBlob(ctx, tc.Repository, digest, blobReader, body)
 		if err != nil {
 			t.Error("UploadBlob() failed:", err)
 		}

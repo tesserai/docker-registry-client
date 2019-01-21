@@ -2,6 +2,7 @@ package registry
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,12 +14,13 @@ import (
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
 	digest "github.com/opencontainers/go-digest"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 // fetchManifest sends a HTTP request to the URL of the manifest addressed by repository/reference.
 // httpVerb is the HTTP verb to send: GET or HEAD. acceptedMediaTypes is the list of acceptable/expected media types.
 // Returns with the HTTP response.
-func (registry *Registry) fetchManifest(repository, reference string, httpVerb string, acceptedMediaTypes []string) (resp *http.Response, err error) {
+func (registry *Registry) fetchManifest(ctx context.Context, repository, reference string, httpVerb string, acceptedMediaTypes []string) (resp *http.Response, err error) {
 
 	url := registry.url("/v2/%s/manifests/%s", repository, reference)
 	registry.Logf("registry.manifest.%s url=%s repository=%s reference=%s", strings.ToLower(httpVerb), url, repository, reference)
@@ -35,7 +37,7 @@ func (registry *Registry) fetchManifest(repository, reference string, httpVerb s
 			req.Header.Add("Accept", acceptedMediaTypes[i])
 		}
 	}
-	resp, err = registry.Client.Do(req)
+	resp, err = ctxhttp.Do(ctx, registry.Client, req)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +46,8 @@ func (registry *Registry) fetchManifest(repository, reference string, httpVerb s
 
 // manifest downloads any type of manifest addressed by repository/reference.
 // acceptedMediaTypes is the list of acceptable/expected mediatypes (shouldn't be empty).
-func (registry *Registry) manifest(repository, reference string, acceptedMediaTypes []string) (distribution.Manifest, error) {
-	resp, err := registry.fetchManifest(repository, reference, "GET", acceptedMediaTypes)
+func (registry *Registry) manifest(ctx context.Context, repository, reference string, acceptedMediaTypes []string) (distribution.Manifest, error) {
+	resp, err := registry.fetchManifest(ctx, repository, reference, "GET", acceptedMediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +112,12 @@ func (registry *Registry) manifest(repository, reference string, acceptedMediaTy
 		for _, m := range deserialized.Manifests {
 			if strings.ToLower(m.Platform.Architecture) == "amd64" && strings.ToLower(m.Platform.OS) == "linux" {
 				// address the manifest explicitly with its digest
-				return registry.manifest(repository, m.Digest.String(), acceptedMediaTypes)
+				return registry.manifest(ctx, repository, m.Digest.String(), acceptedMediaTypes)
 			}
 		}
 		// fallback: use the first manifest in the list
 		// NOTE: emptiness of the list was checked above
-		return registry.manifest(repository, deserialized.Manifests[0].Digest.String(), acceptedMediaTypes)
+		return registry.manifest(ctx, repository, deserialized.Manifests[0].Digest.String(), acceptedMediaTypes)
 
 	default:
 		return nil, fmt.Errorf("unexpected manifest schema was received from registry: %s", actualMediaType)
@@ -126,16 +128,16 @@ func (registry *Registry) manifest(repository, reference string, acceptedMediaTy
 // Manifest returns a schema1 or schema2 manifest addressed by repository/reference.
 // The schema of the result depends on the answer of the registry, it is usually the
 // native schema of the manifest.
-func (registry *Registry) Manifest(repository, reference string) (distribution.Manifest, error) {
+func (registry *Registry) Manifest(ctx context.Context, repository, reference string) (distribution.Manifest, error) {
 	mediaTypes := []string{schema2.MediaTypeManifest, schema1.MediaTypeSignedManifest, schema1.MediaTypeManifest}
-	return registry.manifest(repository, reference, mediaTypes)
+	return registry.manifest(ctx, repository, reference, mediaTypes)
 }
 
 // ManifestV1 returns with the schema1 manifest addressed by repository/reference.
 // If the registry answers with any other manifest schema it returns an error.
-func (registry *Registry) ManifestV1(repository, reference string) (*schema1.SignedManifest, error) {
+func (registry *Registry) ManifestV1(ctx context.Context, repository, reference string) (*schema1.SignedManifest, error) {
 	mediaTypes := []string{schema1.MediaTypeSignedManifest, schema1.MediaTypeManifest}
-	m, err := registry.manifest(repository, reference, mediaTypes)
+	m, err := registry.manifest(ctx, repository, reference, mediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +151,9 @@ func (registry *Registry) ManifestV1(repository, reference string) (*schema1.Sig
 
 // ManifestList returns with the ManifestList (a.k.a. fat manifest) addressed by repository/reference
 // If the registry answers with any other manifest schema it returns an error.
-func (registry *Registry) ManifestList(repository, reference string) (*manifestlist.DeserializedManifestList, error) {
+func (registry *Registry) ManifestList(ctx context.Context, repository, reference string) (*manifestlist.DeserializedManifestList, error) {
 	mediaTypes := []string{manifestlist.MediaTypeManifestList}
-	m, err := registry.manifest(repository, reference, mediaTypes)
+	m, err := registry.manifest(ctx, repository, reference, mediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -170,9 +172,9 @@ func (registry *Registry) ManifestList(repository, reference string) (*manifestl
 // then the method will return the first manifest with 'linux' OS and 'amd64' architecture,
 // or in the absence thereof, the first manifest in the list. (Rationale: the Docker
 // Image Digests returned by `docker images --digests` sometimes refer to manifestlists)
-func (registry *Registry) ManifestV2(repository, reference string) (*schema2.DeserializedManifest, error) {
+func (registry *Registry) ManifestV2(ctx context.Context, repository, reference string) (*schema2.DeserializedManifest, error) {
 	mediaTypes := []string{schema2.MediaTypeManifest}
-	m, err := registry.manifest(repository, reference, mediaTypes)
+	m, err := registry.manifest(ctx, repository, reference, mediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -186,8 +188,8 @@ func (registry *Registry) ManifestV2(repository, reference string) (*schema2.Des
 
 // ManifestDescriptor fills the returned Descriptor according to the Content-Type, Content-Length and
 // Docker-Content-Digest headers of the HTTP Response to a Manifest query.
-func (registry *Registry) manifestDescriptor(repository, reference string, acceptedMediaTypes []string) (distribution.Descriptor, error) {
-	resp, err := registry.fetchManifest(repository, reference, "HEAD", acceptedMediaTypes)
+func (registry *Registry) manifestDescriptor(ctx context.Context, repository, reference string, acceptedMediaTypes []string) (distribution.Descriptor, error) {
+	resp, err := registry.fetchManifest(ctx, repository, reference, "HEAD", acceptedMediaTypes)
 	if err != nil {
 		return distribution.Descriptor{}, err
 	}
@@ -206,16 +208,16 @@ func (registry *Registry) manifestDescriptor(repository, reference string, accep
 
 // ManifestDescriptor fills the returned Descriptor according to the Content-Type, Content-Length and
 // Docker-Content-Digest headers of the HTTP Response to a Manifest query.
-func (registry *Registry) ManifestDescriptor(repository, reference string) (distribution.Descriptor, error) {
+func (registry *Registry) ManifestDescriptor(ctx context.Context, repository, reference string) (distribution.Descriptor, error) {
 	mediaTypes := []string{manifestlist.MediaTypeManifestList, schema2.MediaTypeManifest, schema1.MediaTypeSignedManifest, schema1.MediaTypeManifest}
-	return registry.manifestDescriptor(repository, reference, mediaTypes)
+	return registry.manifestDescriptor(ctx, repository, reference, mediaTypes)
 }
 
 // ManifestDigest returns the 'Docker-Content-Digest' field of the header when making a
 // request to the schema1 manifest.
-func (registry *Registry) ManifestDigest(repository, reference string) (digest.Digest, error) {
+func (registry *Registry) ManifestDigest(ctx context.Context, repository, reference string) (digest.Digest, error) {
 	mediaTypes := []string{}
-	desc, err := registry.manifestDescriptor(repository, reference, mediaTypes)
+	desc, err := registry.manifestDescriptor(ctx, repository, reference, mediaTypes)
 	if err != nil {
 		return "", err
 	}
@@ -224,9 +226,9 @@ func (registry *Registry) ManifestDigest(repository, reference string) (digest.D
 
 // ManifestV2Digest returns the 'Docker-Content-Digest' field of the header when making a
 // request to the schema2 manifest.
-func (registry *Registry) ManifestV2Digest(repository, reference string) (digest.Digest, error) {
+func (registry *Registry) ManifestV2Digest(ctx context.Context, repository, reference string) (digest.Digest, error) {
 	mediaTypes := []string{schema2.MediaTypeManifest}
-	desc, err := registry.manifestDescriptor(repository, reference, mediaTypes)
+	desc, err := registry.manifestDescriptor(ctx, repository, reference, mediaTypes)
 	if err != nil {
 		return "", err
 	}
@@ -234,7 +236,7 @@ func (registry *Registry) ManifestV2Digest(repository, reference string) (digest
 }
 
 // DeleteManifest deletes the manifest given by its digest from the repository
-func (registry *Registry) DeleteManifest(repository string, digest digest.Digest) error {
+func (registry *Registry) DeleteManifest(ctx context.Context, repository string, digest digest.Digest) error {
 	url := registry.url("/v2/%s/manifests/%s", repository, digest)
 	registry.Logf("registry.manifest.delete url=%s repository=%s reference=%s", url, repository, digest)
 
@@ -242,7 +244,7 @@ func (registry *Registry) DeleteManifest(repository string, digest digest.Digest
 	if err != nil {
 		return err
 	}
-	resp, err := registry.Client.Do(req)
+	resp, err := ctxhttp.Do(ctx, registry.Client, req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -254,7 +256,7 @@ func (registry *Registry) DeleteManifest(repository string, digest digest.Digest
 
 // PutManifest uploads manifest to the given repository/reference.
 // Manifest is typically either of type schema2.DeserializedManifest or schema1.SignedManifest
-func (registry *Registry) PutManifest(repository, reference string, manifest distribution.Manifest) error {
+func (registry *Registry) PutManifest(ctx context.Context, repository, reference string, manifest distribution.Manifest) error {
 	url := registry.url("/v2/%s/manifests/%s", repository, reference)
 	registry.Logf("registry.manifest.put url=%s repository=%s reference=%s", url, repository, reference)
 
@@ -270,7 +272,7 @@ func (registry *Registry) PutManifest(repository, reference string, manifest dis
 	}
 
 	req.Header.Set("Content-Type", mediaType)
-	resp, err := registry.Client.Do(req)
+	resp, err := ctxhttp.Do(ctx, registry.Client, req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -279,7 +281,7 @@ func (registry *Registry) PutManifest(repository, reference string, manifest dis
 
 // PutManifestV2 uploads the given schama2.Manifest to the given repository/reference and returns with its digest.
 // If you want to upload a schema2.DeserializedManifest, please use the generic PutManifest().
-func (registry *Registry) PutManifestV2(repository, reference string, manifest *schema2.Manifest) (digest.Digest, error) {
+func (registry *Registry) PutManifestV2(ctx context.Context, repository, reference string, manifest *schema2.Manifest) (digest.Digest, error) {
 	deserializedManifest, err := schema2.FromStruct(*manifest)
 	if err != nil {
 		return "", err
@@ -289,6 +291,6 @@ func (registry *Registry) PutManifestV2(repository, reference string, manifest *
 		return "", err
 	}
 	digest := digest.FromBytes(canonical)
-	err = registry.PutManifest(repository, reference, deserializedManifest)
+	err = registry.PutManifest(ctx, repository, reference, deserializedManifest)
 	return digest, err
 }

@@ -1,10 +1,13 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/context/ctxhttp"
 )
 
 type TokenTransport struct {
@@ -36,7 +39,7 @@ func (t *TokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	if authService := isTokenDemand(resp); authService != nil {
 		_ = resp.Body.Close()
-		resp, err = t.authAndRetry(authService, req)
+		resp, err = t.authAndRetry(req.Context(), authService, req)
 	}
 	return resp, err
 }
@@ -45,8 +48,8 @@ type authToken struct {
 	Token string `json:"token"`
 }
 
-func (t *TokenTransport) authAndRetry(authService *authService, req *http.Request) (*http.Response, error) {
-	token, authResp, err := t.auth(authService)
+func (t *TokenTransport) authAndRetry(ctx context.Context, authService *authService, req *http.Request) (*http.Response, error) {
+	token, authResp, err := t.auth(ctx, authService)
 	if err != nil {
 		return authResp, err
 	}
@@ -55,17 +58,17 @@ func (t *TokenTransport) authAndRetry(authService *authService, req *http.Reques
 	return retryResp, err
 }
 
-func (t *TokenTransport) auth(authService *authService) (string, *http.Response, error) {
+func (t *TokenTransport) auth(ctx context.Context, authService *authService) (string, *http.Response, error) {
 	authReq, err := authService.Request(t.Username, t.Password)
 	if err != nil {
 		return "", nil, err
 	}
 
-	client := http.Client{
+	client := &http.Client{
 		Transport: t.Transport,
 	}
 
-	response, err := client.Do(authReq)
+	response, err := ctxhttp.Do(ctx, client, authReq)
 	if err != nil {
 		return "", nil, err
 	}

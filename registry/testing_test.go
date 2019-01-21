@@ -1,6 +1,7 @@
 package registry_test
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/docker/distribution"
 	"github.com/nokia/docker-registry-client/registry"
-	"github.com/opencontainers/go-digest"
+	digest "github.com/opencontainers/go-digest"
 )
 
 // Expected stores the expected results of various tests
@@ -44,7 +45,8 @@ func (tc TestCase) Name() string {
 func (tc *TestCase) Registry(t *testing.T) *registry.Registry {
 	if tc.registry == nil {
 		var err error
-		tc.registry, err = registry.NewCustom(tc.Url, tc.Options)
+		ctx := context.Background()
+		tc.registry, err = registry.NewCustom(ctx, tc.Url, tc.Options)
 		if err != nil {
 			t.Fatal("failed to create registry client:", err)
 		}

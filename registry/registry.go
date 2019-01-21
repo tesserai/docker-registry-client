@@ -1,11 +1,14 @@
 package registry
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+
+	"golang.org/x/net/context/ctxhttp"
 )
 
 // Registry is the main Docker Registry API client type
@@ -49,7 +52,7 @@ type Options struct {
 //   DisableBasicAuth: disable basicauth authentication (default: basicauth is enabled)
 //                     (note that some registries, e.g. older versions of Artifactory, don't play well
 //                     with both token and basic auth enabled)
-func NewCustom(url string, opts Options) (*Registry, error) {
+func NewCustom(ctx context.Context, url string, opts Options) (*Registry, error) {
 	url = strings.TrimSuffix(url, "/")
 	var transport http.RoundTripper
 	if opts.Insecure {
@@ -75,7 +78,7 @@ func NewCustom(url string, opts Options) (*Registry, error) {
 		Logf: logf,
 	}
 	if opts.DoInitialPing {
-		if err := registry.Ping(); err != nil {
+		if err := registry.Ping(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -90,8 +93,8 @@ func NewCustom(url string, opts Options) (*Registry, error) {
 //
 // This constructor is left here for backward compatitibiliy,
 // use NewCustom() if you need more control over constructor parameters.
-func New(url, username, password string) (*Registry, error) {
-	return NewCustom(url, Options{
+func New(ctx context.Context, url, username, password string) (*Registry, error) {
+	return NewCustom(ctx, url, Options{
 		Username:      username,
 		Password:      password,
 		Logf:          Log,
@@ -106,8 +109,8 @@ func New(url, username, password string) (*Registry, error) {
 //
 // This constructor is left here for backward compatitibiliy,
 // use NewCustom() if you need more control over constructor parameters.
-func NewInsecure(url, username, password string) (*Registry, error) {
-	return NewCustom(url, Options{
+func NewInsecure(ctx context.Context, url, username, password string) (*Registry, error) {
+	return NewCustom(ctx, url, Options{
 		Username:      username,
 		Password:      password,
 		Insecure:      true,
@@ -149,10 +152,10 @@ func (registry *Registry) url(pathTemplate string, args ...interface{}) string {
 }
 
 // Ping checks if the registry is accessible and supports Docker Registry API v2
-func (registry *Registry) Ping() error {
+func (registry *Registry) Ping(ctx context.Context) error {
 	url := registry.url("/v2/")
 	registry.Logf("registry.ping url=%s", url)
-	resp, err := registry.Client.Get(url)
+	resp, err := ctxhttp.Get(ctx, registry.Client, url)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
